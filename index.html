@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academic GPA Manager</title>
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#111111">
+
+    <!-- iOS Support -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="GPA Manager">
+    <link rel="apple-touch-icon" href="icon-192.png">
+
+    <style>
+        /* --- CSS: Modern Premium Clean Theme --- */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+
+        :root {
+            --bg-body: #f4f6f8;       
+            --bg-card: #ffffff;       
+            --text-primary: #1a1a1a;  
+            --text-secondary: #666666;
+            --accent: #111111;        
+            --border-light: #e1e4e8;
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.04);
+            --shadow-md: 0 12px 24px rgba(0,0,0,0.08);
+            --radius-sm: 8px;
+            --radius-lg: 16px;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 950px; /* Diperlebar untuk kolom Grade */
+            padding: 40px 20px;
+            box-sizing: border-box;
+            flex: 1;
+        }
+
+        /* --- STUDENT PROFILE SECTION --- */
+        .student-profile {
+            background: var(--bg-card);
+            padding: 25px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-light);
+            margin-bottom: 30px;
+            display: grid;
+            gap: 15px;
+        }
+        .profile-header {
+            font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px;
+        }
+        .optional-tag { font-weight: 400; text-transform: none; opacity: 0.6; font-size: 0.7rem; }
+        
+        .profile-input {
+            font-size: 1.1rem; font-weight: 600; border: 1px solid #eee; padding: 10px; border-radius: var(--radius-sm);
+            width: 100%; box-sizing: border-box; transition: all 0.2s; font-family: 'Inter', sans-serif;
+        }
+        .profile-input:focus { border-color: var(--accent); background: #fff; outline: none; }
+        .profile-input::placeholder { color: #ccc; font-weight: 400; }
+
+        .char-count { 
+            font-size: 0.65rem; color: #999; text-align: right; margin-top: 2px; 
+            opacity: 0; transition: opacity 0.2s ease-in-out; height: 15px;
+        }
+        .char-count.visible { opacity: 1; }
+        .char-count.limit-reached { color: #e74c3c; font-weight: bold; }
+
+        .print-profile-view { display: none; }
+
+        /* --- GLOBAL STATS --- */
+        .global-stats {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 40px;
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-light);
+            transition: transform 0.2s ease;
+            position: relative;
+        }
+        .global-stats:hover { transform: translateY(-2px); }
+
+        .gpa-big { 
+            font-size: 4.5rem; font-weight: 800; line-height: 1; margin: 15px 0; letter-spacing: -2px;
+            background: -webkit-linear-gradient(#000, #444); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        
+        .credits-label { 
+            font-size: 0.9rem; color: var(--text-secondary); font-weight: 600; 
+            background: #f0f2f5; display: inline-block; padding: 6px 16px; border-radius: 20px;
+        }
+
+        /* --- NAVIGATION --- */
+        .nav-tabs {
+            display: flex; justify-content: center; margin-bottom: 30px; position: sticky; top: 20px; z-index: 10;
+            background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); padding: 8px; border-radius: 50px;
+            box-shadow: var(--shadow-sm); width: fit-content; margin-left: auto; margin-right: auto;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        .tab-btn {
+            background: none; border: none; padding: 10px 25px; font-size: 0.85rem; font-weight: 700; text-transform: uppercase;
+            cursor: pointer; color: var(--text-secondary); transition: all 0.3s; border-radius: 30px;
+        }
+        .tab-btn.active { background: var(--accent); color: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+        .tab-btn:hover:not(.active) { color: var(--text-primary); background: rgba(0,0,0,0.03); }
+
+        .page-section { display: none; animation: fadeIn 0.4s ease; }
+        .page-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- CARDS & BLOCKS --- */
+        .history-block, .semester-block, .subject-card {
+            background: var(--bg-card); padding: 30px; border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm); border: 1px solid var(--border-light); margin-bottom: 25px; transition: all 0.2s ease;
+        }
+        .history-block { 
+            display: flex; gap: 20px; align-items: flex-end; background: #ffffff; border-left: 5px solid var(--accent);
+        }
+        .semester-block:hover, .subject-card:hover { box-shadow: var(--shadow-md); border-color: #d1d5db; }
+
+        .semester-header { 
+            display: flex; justify-content: space-between; align-items: flex-start; 
+            border-bottom: 1px solid var(--border-light); padding-bottom: 15px; margin-bottom: 20px; 
+        }
+        .semester-title-wrapper { flex-grow: 1; margin-right: 20px; }
+        .semester-title { 
+            font-size: 1.1rem; font-weight: 700; color: var(--text-primary); width: 100%;
+            border-bottom: 1px dashed transparent; transition: border 0.2s; background: transparent; border: none; outline: none;
+        }
+        .semester-title:focus { border-bottom: 1px solid #000; }
+        
+        .semester-footer { margin-top: 20px; padding-top: 15px; border-top: 1px dashed var(--border-light); display: flex; justify-content: space-between; font-weight: 700; color: var(--accent); }
+
+        .sort-select {
+            background: #f9f9f9; border: 1px solid #ddd; padding: 6px 10px; font-size: 0.75rem; border-radius: 6px; outline: none; font-family: inherit; font-weight: 600; color: #555; cursor: pointer; min-width: 120px;
+        }
+        .sort-select:hover { border-color: #000; color: #000; }
+
+        /* --- INPUTS --- */
+        input {
+            background: transparent; border: none; border-bottom: 1px solid #e1e4e8;
+            padding: 10px 0; font-size: 1rem; outline: none; width: 100%; font-family: inherit; color: var(--text-primary); transition: border-color 0.3s;
+        }
+        input:focus { border-bottom: 2px solid var(--accent); }
+        .history-input { font-size: 1.3rem; font-weight: 700; }
+        .input-group label { display: block; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; color: var(--text-secondary); letter-spacing: 0.5px; }
+
+        /* --- TABLE GRID (UPDATED FOR GRADE COLUMN) --- */
+        /* NO | COURSE | SCU | SCORE | GRADE | DELETE */
+        .table-header-row {
+            display: grid; grid-template-columns: 30px 4fr 60px 80px 50px 30px; gap: 15px; padding: 0 0 10px 0;
+            border-bottom: 2px solid #eee; margin-bottom: 15px; font-size: 0.7rem; font-weight: 700; color: #999;
+        }
+        .row-grid { 
+            display: grid; grid-template-columns: 30px 4fr 60px 80px 50px 30px; gap: 15px; margin-bottom: 12px; align-items: flex-start;
+        }
+        .num-col { padding-top: 12px; font-size: 0.9rem; color: #999; font-weight: 600; text-align: center; }
+        
+        .grade-display {
+            padding-top: 10px; font-weight: 800; text-align: center; color: var(--accent); font-size: 0.95rem;
+        }
+
+        .comp-grid { display: grid; grid-template-columns: 3fr 1fr 1fr 30px; gap: 15px; margin-bottom: 10px; align-items: flex-start; }
+        .comp-header { display: grid; grid-template-columns: 3fr 1fr 1fr 30px; gap: 15px; margin-bottom: 10px; font-size: 0.7rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; align-items: end; }
+
+        /* --- BUTTONS --- */
+        button {
+            cursor: pointer; background: transparent; border: 1px solid var(--border-light);
+            color: var(--text-primary); padding: 12px 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+            border-radius: var(--radius-sm); transition: all 0.2s;
+        }
+        button:hover { background: var(--accent); color: #fff; border-color: var(--accent); transform: translateY(-1px); }
+        .btn-delete { border: none; font-size: 1.2rem; color: #d1d1d1; padding: 0 5px; margin-top: 5px;}
+        .btn-delete:hover { color: #e74c3c; background: transparent; transform: none; }
+        .btn-download {
+            margin-top: 20px; background: var(--accent); color: #fff; width: 100%; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        .btn-download:hover { opacity: 0.9; transform: translateY(-2px); }
+
+        /* --- RULES --- */
+        .rules-section { margin-top: 60px; background: var(--bg-card); padding: 30px; border-radius: var(--radius-lg); border: 1px solid var(--border-light); }
+        .rules-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .rules-title { text-transform: uppercase; font-weight: 800; font-size: 0.9rem; letter-spacing: 1px;}
+        .rules-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
+        .rule-item { background: var(--bg-body); border: 1px solid transparent; border-radius: 8px; padding: 10px; text-align: center; font-size: 0.8rem; color: var(--text-secondary); font-weight: 500; }
+        .rule-grade { font-weight: 800; color: var(--text-primary); }
+
+        /* --- MODAL --- */
+        .modal { display: none; position: fixed; z-index: 200; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); backdrop-filter: blur(5px); align-items: center; justify-content: center; }
+        .modal-content { background: #fff; border: none; padding: 35px; width: 90%; max-width: 500px; border-radius: var(--radius-lg); box-shadow: 0 25px 50px rgba(0,0,0,0.25); }
+        .modal-header { display: flex; justify-content: space-between; margin-bottom: 25px; font-weight: 800; font-size: 1.2rem; text-transform: uppercase; letter-spacing: -0.5px;}
+        .scale-row { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 30px; gap: 10px; margin-bottom: 10px; }
+        .scale-header { font-size: 0.7rem; font-weight: bold; margin-bottom: 5px; color: #999; }
+
+        #toast { visibility: hidden; min-width: 250px; background-color: #111; color: #fff; text-align: center; padding: 16px; position: fixed; z-index: 100; left: 50%; bottom: 30px; transform: translateX(-50%); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px; border-radius: 50px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); font-weight: 600; }
+        #toast.show { visibility: visible; animation: popUp 0.5s, fadeOut 0.5s 2.5s; }
+        @keyframes popUp { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
+        @keyframes fadeOut { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+
+        @media (max-width: 600px) {
+            .table-header-row { display: none; }
+            .row-grid, .comp-grid, .scale-row { grid-template-columns: 1fr; border-bottom: 1px solid #eee; padding-bottom: 15px; gap: 8px; }
+            .num-col { display: none; }
+            .grade-display { text-align: left; padding: 0; color: #666; font-size: 0.8rem; margin-bottom: 5px; }
+            .grade-display::before { content: "Grade: "; font-weight: 400; }
+            .history-block { flex-direction: column; gap: 15px; }
+            .comp-header { display: none; }
+            .gpa-big { font-size: 3.5rem; }
+            .container { padding: 20px 15px; }
+        }
+
+        /* --- PRINT STYLES --- */
+        @media print {
+            body { background: #fff; color: #000; -webkit-print-color-adjust: exact; }
+            .nav-tabs, button, .rules-section, #page-subject { display: none !important; }
+            .optional-tag, .char-count { display: none !important; } 
+            .print-hidden { display: none !important; }
+            .container { max-width: 100%; width: 100%; padding: 0; margin: 0; }
+            .history-block div[style*="font-size:0.75rem"] { display: none; }
+            .sort-select { display: none; }
+            .student-profile { border: none; box-shadow: none; padding: 0; margin-bottom: 40px; }
+            .profile-input { display: none; } 
+            .print-profile-view { display: block; white-space: pre-wrap; word-wrap: break-word; font-size: 1.1rem; font-weight: 600; margin-top: 5px; color: #000; }
+            .profile-header { color: #888; margin-top: 15px; }
+            #view-uni { font-size: 2rem; font-weight: 900; text-transform: uppercase; margin-bottom: 20px; line-height: 1.1; }
+            #page-semester { display: block !important; }
+            .global-stats { border: 2px solid #000; box-shadow: none; margin-bottom: 20px; padding: 20px; break-inside: avoid; }
+            .global-stats::before { content: "OFFICIAL ACADEMIC TRANSCRIPT"; display: block; font-weight: 900; font-size: 1.5rem; margin-bottom: 10px; letter-spacing: 2px; }
+            .global-stats::after { content: "Generated on: " attr(data-date); display: block; font-size: 0.8rem; color: #666; margin-top: 10px; }
+            .semester-block { break-inside: avoid; border: 1px solid #000; box-shadow: none; margin-bottom: 20px; }
+            .history-block { border: 1px solid #000; background: #fff; }
+            input { border-bottom: none !important; padding: 0; font-weight: 600; }
+            
+            /* Print Cols: NO | COURSE | SCU | SCORE | GRADE */
+            .row-grid { grid-template-columns: 30px 4fr 60px 80px 50px; gap: 20px; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 5px;}
+            .table-header-row { grid-template-columns: 30px 4fr 60px 80px 50px; }
+            .row-grid > *:last-child, .table-header-row > *:last-child { display: none; } 
+            
+            .gpa-big { font-size: 3rem; margin: 10px 0; -webkit-text-fill-color: #000; }
+            .semester-title { font-size: 1.2rem; text-decoration: underline; border: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="student-profile" id="student-profile-section">
+            <div>
+                <div class="profile-header">UNIVERSITY <span class="optional-tag">(Optional)</span></div>
+                <input type="text" id="input-uni" class="profile-input" placeholder="e.g. Harvard University" maxlength="50" oninput="updateCharCount(this)" onfocus="focusCharCount(this)" onblur="blurCharCount(this)">
+                <div class="char-count">0/50</div>
+                <div id="view-uni" class="print-profile-view"></div>
+            </div>
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
+                <div>
+                    <div class="profile-header">Student Name <span class="optional-tag">(Optional)</span></div>
+                    <input type="text" id="input-name" class="profile-input" placeholder="Full Name" maxlength="100" oninput="updateCharCount(this)" onfocus="focusCharCount(this)" onblur="blurCharCount(this)">
+                    <div class="char-count">0/100</div>
+                    <div id="view-name" class="print-profile-view"></div>
+                </div>
+                <div>
+                    <div class="profile-header">Student ID <span class="optional-tag">(Optional)</span></div>
+                    <input type="text" id="input-id" class="profile-input" placeholder="ID Number" maxlength="15" oninput="updateCharCount(this)" onfocus="focusCharCount(this)" onblur="blurCharCount(this)">
+                    <div class="char-count">0/15</div>
+                    <div id="view-id" class="print-profile-view"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="global-stats" id="print-stats">
+            <div style="font-size: 0.8rem; letter-spacing: 2px; text-transform: uppercase; font-weight: 700; color: #888;">Total Cumulative GPA</div>
+            <div class="gpa-big" id="global-gpa">0.00</div>
+            <div class="credits-label">
+                Total Credits (<span id="txt-past">0</span> + <span id="txt-new">0</span>): <span id="global-credits" style="color:#000; font-weight:bold;">0</span>
+            </div>
+            <button class="btn-download" onclick="downloadTranscript()">Download Transcript (PDF)</button>
+        </div>
+
+        <nav class="nav-tabs">
+            <button class="tab-btn active" onclick="switchTab('semester')">Semester & GPA</button>
+            <button class="tab-btn" onclick="switchTab('subject')">Subject Grader</button>
+        </nav>
+
+        <div id="page-semester" class="page-section active">
+            <div class="history-block">
+                <div class="input-group">
+                    <label>Previous Cumulative GPA</label>
+                    <input type="number" id="prev-gpa" class="history-input" placeholder="0.00" oninput="calculateAll()">
+                </div>
+                <div class="input-group">
+                    <label>Previous Total Credits</label>
+                    <input type="number" id="prev-credits" class="history-input" placeholder="0" oninput="calculateAll()">
+                </div>
+                <div style="font-size:0.75rem; color:#888; max-width: 200px; text-align:right; font-weight:500;">
+                    Fill this to include past semesters history.
+                </div>
+            </div>
+            <div id="semester-container"></div>
+            <button onclick="addSemesterBlock()" style="width:100%; border: 2px dashed #ddd; color: #888;">+ Add New Semester</button>
+        </div>
+
+        <div id="page-subject" class="page-section">
+            <div style="margin-bottom: 25px; font-size: 0.9rem; color: #666; text-align:center;">
+                Calculate specific subject components (0-100), then transfer the result to the semester list.<br>
+                <span style="font-size:0.8rem; color:#999;">Or import a JSON file:</span>
+                <input type="file" id="json-input" accept=".json" style="display:none" onchange="handleFileImport(this)">
+                <button onclick="document.getElementById('json-input').click()" style="margin-left:10px; padding: 5px 10px; font-size:0.7rem;">Import JSON</button>
+            </div>
+            <div id="subjects-container"></div>
+            <button onclick="addSubjectCard()" style="width:100%; border: 2px dashed #ddd; color: #888;">+ Add Subject Calculator</button>
+        </div>
+
+        <div class="rules-section">
+            <div class="rules-header">
+                <span class="rules-title">Grading Scale (Active)</span>
+                <button onclick="openSettings()" style="border: 1px solid #ddd; padding: 8px 15px; font-size: 0.7rem;">&#9881; Edit Scale</button>
+            </div>
+            <div class="rules-grid" id="rules-display"></div>
+        </div>
+    </div>
+
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>Custom Grading Scale</span>
+                <span onclick="closeSettings()" style="cursor:pointer; color:#999;">&times;</span>
+            </div>
+            <div style="margin-bottom: 20px; font-size: 0.85rem; color: #666; line-height: 1.4;">
+                Define your rules. Input the Letter Grade, Min Score, Max Score, and GPA Point.
+            </div>
+            <div class="scale-row scale-header">
+                <span>Grade</span>
+                <span>Min</span>
+                <span>Max</span>
+                <span>Point</span>
+                <span></span>
+            </div>
+            <div id="scale-rows-container"></div>
+            <button onclick="addScaleRow()" style="margin-top: 15px; margin-bottom: 25px; width: 100%; border: 1px dashed #ccc;">+ Add Row</button>
+            <div style="display:flex; justify-content: flex-end; gap: 15px; border-top: 1px solid #f0f0f0; padding-top: 20px;">
+                <button onclick="closeSettings()" style="color:#666; border:none; background: #f5f5f5;">Cancel</button>
+                <button onclick="saveSettings()" style="background:#111; color:#fff; border:none; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast">Transferred successfully</div>
+
+    <script>
+        let gradingScale = [
+            { l: 'A', min: 90, max: 100, p: 4.0 }, { l: 'A-', min: 85, max: 89.99, p: 3.7 },
+            { l: 'B+', min: 80, max: 84.99, p: 3.3 }, { l: 'B', min: 75, max: 79.99, p: 3.0 },
+            { l: 'B-', min: 70, max: 74.99, p: 2.7 }, { l: 'C', min: 65, max: 69.99, p: 2.0 },
+            { l: 'D', min: 50, max: 64.99, p: 1.0 }, { l: 'E', min: 0, max: 49.99, p: 0.0 }
+        ];
+        let semesterCount = 0;
+
+        // --- FILE IMPORT LOGIC ---
+        function handleFileImport(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    // Expected format: { "subjectName": "Math", "components": [ {"name":"Mid", "weight":30, "score":90}, ... ] }
+                    const subjectName = data.subjectName || "Imported Subject";
+                    const components = data.components || [];
+                    
+                    // Create card
+                    const container = document.getElementById('subjects-container');
+                    const subId = `sub-${Date.now()}`;
+                    const div = document.createElement('div'); div.className = 'subject-card'; div.id = subId;
+                    div.innerHTML = `
+                        <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items:flex-start;">
+                            <div style="flex-grow:1; margin-right:15px;">
+                                <input type="text" class="sub-name" value="${subjectName}" style="font-weight:bold; font-size:1.1rem;" maxlength="50" oninput="updateCharCount(this)" onfocus="focusCharCount(this)" onblur="blurCharCount(this)">
+                                <div class="char-count">0/50</div>
+                            </div>
+                            <button class="btn-delete" onclick="document.getElementById('${subId}').remove()">&times;</button>
+                        </div>
+                        <div class="comp-header"><span>COMPONENT NAME</span><span>WEIGHT %</span><span>SCORE</span><span></span></div>
+                        <div id="comps-${subId}"></div>
+                        <button onclick="addCompRow('${subId}')" style="font-size:0.7rem; margin:15px 0 0 0; width:100%; text-align:left; color:#888;">+ Component</button>
+                        <div style="border-top:1px solid #eee; padding-top:15px; margin-top:15px; display:flex; justify-content:space-between; align-items:center;">
+                            <button onclick="transferToSemester('${subId}')" style="background:#111; color:#fff; border:none; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">Transfer to Semester GPA</button>
+                            <div style="text-align:right;">
+                                <span id="score-${subId}" style="font-size:1.5rem; font-weight:800;">0.00</span>
+                                <span id="letter-${subId}" style="background:#000; color:#fff; padding:4px 8px; border-radius:4px; margin-left:5px;">-</span>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(div);
+
+                    // Add components
+                    components.forEach(c => {
+                        addCompRow(subId, c.name, c.weight, c.score);
+                    });
+                    
+                    showToast("File Imported Successfully!");
+                } catch (err) {
+                    alert("Invalid JSON format");
+                }
+            };
+            reader.readAsText(file);
+            input.value = ''; // reset
+        }
+
+        // --- UTILS ---
+        function updateCharCount(input) {
+            const count = input.value.length;
+            const max = input.getAttribute("maxlength");
+            const display = input.nextElementSibling; 
+            if(display && display.classList.contains('char-count')) {
+                display.innerText = `${count}/${max}`;
+                if (count >= max) display.classList.add("limit-reached");
+                else display.classList.remove("limit-reached");
+            }
+        }
+        function focusCharCount(input) {
+            const display = input.nextElementSibling;
+            if(display && display.classList.contains('char-count')) display.classList.add('visible');
+        }
+        function blurCharCount(input) {
+            const display = input.nextElementSibling;
+            if(display && display.classList.contains('char-count')) display.classList.remove('visible');
+        }
+        function validateComponentInput(el) {
+            let val = parseFloat(el.value);
+            if (val < 0) { el.value = 0; showToast("Minimum value is 0"); }
+            if (val > 100) { el.value = 100; showToast("Maximum value is 100"); }
+        }
+
+        // --- PRINT ---
+        function downloadTranscript() {
+            const date = new Date().toLocaleDateString();
+            document.getElementById('print-stats').setAttribute('data-date', date);
+            const uni = document.getElementById('input-uni').value.trim();
+            const name = document.getElementById('input-name').value.trim();
+            const id = document.getElementById('input-id').value.trim();
+            const profileSection = document.getElementById('student-profile-section');
+            if (!uni && !name && !id) profileSection.classList.add('print-hidden');
+            else {
+                profileSection.classList.remove('print-hidden');
+                document.getElementById('view-uni').innerText = uni;
+                document.getElementById('view-name').innerText = name;
+                document.getElementById('view-id').innerText = id;
+            }
+            window.print();
+        }
+
+        // --- LOGIC ---
+        function getPointFromScore(score) {
+            score = parseFloat(score);
+            const match = gradingScale.find(rule => score >= rule.min && score <= rule.max);
+            if (match) return { p: match.p, l: match.l };
+            return { p: 0.0, l: '-' }; 
+        }
+        function getPointFromLetter(letter) {
+            const clean = letter.toUpperCase().trim();
+            const match = gradingScale.find(rule => rule.l === clean);
+            return match ? match.p : null;
+        }
+
+        function sortSemester(semId, criteria) {
+            const list = document.getElementById(`courses-${semId}`);
+            const rows = Array.from(list.querySelectorAll('.row-grid'));
+            const getData = (row) => {
+                const credits = parseFloat(row.querySelector('.input-credits').value) || 0;
+                const gradeInput = row.querySelector('.input-grade').value.trim();
+                const idParts = row.id.split('-');
+                const creationTime = parseInt(idParts[1]) || 0;
+                let sortValue = -1; 
+                if (!isNaN(gradeInput) && gradeInput !== '') sortValue = parseFloat(gradeInput);
+                else {
+                    const rule = gradingScale.find(r => r.l === gradeInput.toUpperCase());
+                    if (rule) sortValue = rule.p * 25; else sortValue = -999; 
+                }
+                return { element: row, credits, sortValue, creationTime };
+            };
+            const data = rows.map(getData);
+            data.sort((a, b) => {
+                if (criteria === 'default') return a.creationTime - b.creationTime; 
+                if (criteria === 'score-high') return b.sortValue - a.sortValue;
+                if (criteria === 'score-low') return a.sortValue - b.sortValue;
+                if (criteria === 'credit-high') return b.credits - a.credits;
+                if (criteria === 'credit-low') return a.credits - b.credits;
+                return 0; 
+            });
+            data.forEach(item => list.appendChild(item.element));
+            renumberCourses(semId);
+        }
+
+        function renumberCourses(semId) {
+            const list = document.getElementById(`courses-${semId}`);
+            const rows = list.querySelectorAll('.row-grid .num-col');
+            rows.forEach((col, index) => col.innerText = (index + 1) + ".");
+        }
+
+        // --- SETTINGS ---
+        function openSettings() {
+            const container = document.getElementById('scale-rows-container'); container.innerHTML = '';
+            gradingScale.forEach(rule => addScaleRow(rule.l, rule.min, rule.max, rule.p));
+            document.getElementById('settingsModal').style.display = 'flex';
+        }
+        function closeSettings() { document.getElementById('settingsModal').style.display = 'none'; }
+        function addScaleRow(l='', min='', max='', p='') {
+            const container = document.getElementById('scale-rows-container');
+            const div = document.createElement('div'); div.className = 'scale-row';
+            div.innerHTML = `
+                <input type="text" placeholder="A" value="${l}" class="s-grade">
+                <input type="number" placeholder="90" value="${min}" class="s-min">
+                <input type="number" placeholder="100" value="${max}" class="s-max">
+                <input type="number" placeholder="4.0" value="${p}" class="s-point">
+                <button class="btn-delete" onclick="this.parentElement.remove()">&times;</button>
+            `;
+            container.appendChild(div);
+        }
+        function saveSettings() {
+            const rows = document.querySelectorAll('#scale-rows-container .scale-row');
+            const newScale = [];
+            rows.forEach(row => {
+                const l = row.querySelector('.s-grade').value.toUpperCase().trim();
+                const min = parseFloat(row.querySelector('.s-min').value);
+                const max = parseFloat(row.querySelector('.s-max').value);
+                const p = parseFloat(row.querySelector('.s-point').value);
+                if (l && !isNaN(min) && !isNaN(max) && !isNaN(p)) newScale.push({ l, min, max, p });
+            });
+            newScale.sort((a, b) => b.min - a.min);
+            if (newScale.length > 0) {
+                gradingScale = newScale; renderRulesFooter(); calculateAll(); 
+                document.querySelectorAll('.subject-card').forEach(card => {
+                    const id = card.id.replace('sub-', ''); calcSubject('sub-' + id); 
+                });
+                closeSettings(); showToast("Grading scale updated!");
+            } else alert("Please add at least one valid rule.");
+        }
+        function renderRulesFooter() {
+            const container = document.getElementById('rules-display'); container.innerHTML = '';
+            gradingScale.forEach(rule => {
+                const div = document.createElement('div'); div.className = 'rule-item';
+                div.innerHTML = `<span class="rule-grade">${rule.l}</span> (${rule.min}-${rule.max}) : ${rule.p}`;
+                container.appendChild(div);
+            });
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(`page-${tab}`).classList.add('active');
+            const btnIndex = tab === 'semester' ? 0 : 1;
+            document.querySelectorAll('.tab-btn')[btnIndex].classList.add('active');
+        }
+        function showToast(msg) {
+            const x = document.getElementById("toast"); x.innerText = msg; x.className = "show";
+            setTimeout(() => x.className = x.className.replace("show", ""), 3000);
+        }
+        function validateInputRange(el) {
+            let val = parseFloat(el.value); if (val < 0) el.value = 0;
+        }
+
+        // --- MAIN UI ---
+        function addSemesterBlock() {
+            semesterCount++;
+            const container = document.getElementById('semester-container');
+            const semId = `sem-${Date.now()}`;
+            const div = document.createElement('div');
+            div.className = 'semester-block';
+            div.id = semId;
+            div.innerHTML = `
+                <div class="semester-header">
+                    <div class="semester-title-wrapper">
+                        <input type="text" class="semester-title" value="Semester ${semesterCount}" maxlength="30" 
+                            oninput="updateCharCount(this)" onfocus="focusCharCount(this)" onblur="blurCharCount(this)">
+                        <div class="char-count">0/30</div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <select class="sort-select" onchange="sortSemester('${semId}', this.value)">
+                            <option value="default">Default</option>
+                            <option value="score-high">Score &darr;</option>
+                            <option value="score-low">Score &uarr;</option>
+                            <option value="credit-high">Credits &darr;</option>
+                            <option value="credit-low">Credits &uarr;</option>
+                        </select>
+                        <button class="btn-delete" onclick="removeSemester('${semId}')">&times;</button>
+                    </div>
+                </div>
+                <div class="table-header-row">
+                    <span style="text-align:center">NO</span>
+                    <span>COURSE</span>
+                    <span>SCU</span>
+                    <span>SCORE</span>
+                    <span>GRADE</span>
+                    <span></span>
+                </div>
+                <div class="course-list" id="courses-${semId}"></div>
+                <button onclick="addCourseRow('${semId}')" style="margin-top:10px; width:100%; text-align:left; color: #888;">+ Add Course</button>
+                <div class="semester-footer">
+                    <span>Semester GPA:</span>
+                    <span id="gpa-${semId}">0.00</span>
+                </div>
+            `;
+            container.appendChild(div);
+            addCourseRow(semId);
+            return semId;
+        }
+
+        function removeSemester(semId) {
+            if(confirm("Delete this semester?")) { document.getElementById(semId).remove(); calculateAll(); }
+        }
+
+        function addCourseRow(semId, name='', grade='') {
+            const list = document.getElementById(`courses-${semId}`);
+            const rowId = `c-${Date.now()}-${Math.random()}`;
+            const div = document.createElement('div');
+            div.className = 'row-grid';
+            div.id = rowId;
+            div.innerHTML = `
+                <div class="num-col">1.</div>
+                <div>
+                    <input type="text" placeholder="Course Name" value="${name}" maxlength="50" 
+                        oninput="updateCharCount(this)" onfocus="focusCharCount(this)" onblur="blurCharCount(this)">
+                    <div class="char-count">0/50</div>
+                </div>
+                <input type="number" placeholder="SCU" class="input-credits" min="0" oninput="calculateAll()">
+                <input type="text" placeholder="Score" class="input-grade" value="${grade}" oninput="calculateAll()">
+                <div class="grade-display">-</div>
+                <button class="btn-delete" onclick="document.getElementById('${rowId}').remove(); calculateAll(); renumberCourses('${semId}');">&times;</button>
+            `;
+            list.appendChild(div);
+            renumberCourses(semId); calculateAll();
+        }
+
+        function calculateAll() {
+            const prevGPA = parseFloat(document.getElementById('prev-gpa').value) || 0;
+            const prevCredits = parseFloat(document.getElementById('prev-credits').value) || 0;
+            let globalPoints = prevGPA * prevCredits;
+            let newCredits = 0; let newPoints = 0;
+
+            document.querySelectorAll('.semester-block').forEach(sem => {
+                const semId = sem.id; let semPoints = 0; let semCredits = 0;
+                sem.querySelectorAll('.row-grid').forEach(row => {
+                    const credits = parseFloat(row.querySelector('.input-credits').value) || 0;
+                    const gradeVal = row.querySelector('.input-grade').value;
+                    const gradeDisplay = row.querySelector('.grade-display');
+                    let point = 0;
+                    
+                    if (!isNaN(gradeVal) && gradeVal !== '') {
+                        const res = getPointFromScore(gradeVal);
+                        point = res.p;
+                        gradeDisplay.innerText = res.l;
+                    } else { 
+                        const p = getPointFromLetter(gradeVal); 
+                        if (p !== null) { point = p; gradeDisplay.innerText = gradeVal.toUpperCase(); }
+                        else gradeDisplay.innerText = "-";
+                    }
+                    if(credits > 0) { semPoints += (point * credits); semCredits += credits; }
+                });
+                const semGPA = semCredits > 0 ? (semPoints / semCredits).toFixed(2) : "0.00";
+                document.getElementById(`gpa-${semId}`).innerText = semGPA;
+                newCredits += semCredits; newPoints += semPoints;
+                if(semCredits > 24) showToast("Is your campus this brutal?");
+            });
+            globalPoints += newPoints; const totalCredits = prevCredits + newCredits;
+            const cumulativeGPA = totalCredits > 0 ? (globalPoints / totalCredits).toFixed(2) : "0.00";
+            document.getElementById('global-gpa').innerText = cumulativeGPA;
+            document.getElementById('txt-past').innerText = prevCredits;
+            document.getElementById('txt-new').innerText = newCredits;
+            document.getElementById('global-credits').innerText = totalCredits;
+        }
+
+        function addSubjectCard() {
+            const container = document.getElementById('subjects-container');
+            const subId = `sub-${Date.now()}`;
+            const div = document.createElement('div'); div.className = 'subject-card'; div.id = subId;
+            div.innerHTML = `
+                <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items:flex-start;">
+                    <div style="flex-grow:1; margin-right:15px;">
+                        <input type="text" class="sub-name" placeholder="Subject Name (e.g. Calculus)" style="font-weight:bold; font-size:1.1rem;" maxlength="50" oninput="updateCharCount(this)" onfocus="focusCharCount(this)" onblur="blurCharCount(this)">
+                        <div class="char-count">0/50</div>
+                    </div>
+                    <button class="btn-delete" onclick="document.getElementById('${subId}').remove()">&times;</button>
+                </div>
+                <div class="comp-header"><span>COMPONENT NAME</span><span>WEIGHT %</span><span>SCORE</span><span></span></div>
+                <div id="comps-${subId}"></div>
+                <button onclick="addCompRow('${subId}')" style="font-size:0.7rem; margin:15px 0 0 0; width:100%; text-align:left; color:#888;">+ Component</button>
+                <div style="border-top:1px solid #eee; padding-top:15px; margin-top:15px; display:flex; justify-content:space-between; align-items:center;">
+                    <button onclick="transferToSemester('${subId}')" style="background:#111; color:#fff; border:none; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">Transfer to Semester GPA</button>
+                    <div style="text-align:right;">
+                        <span id="score-${subId}" style="font-size:1.5rem; font-weight:800;">0.00</span>
+                        <span id="letter-${subId}" style="background:#000; color:#fff; padding:4px 8px; border-radius:4px; margin-left:5px;">-</span>
+                    </div>
+                </div>
+            `;
+            container.appendChild(div);
+            addCompRow(subId, 'Assignment', 20); addCompRow(subId, 'Midterm Exam', 30); addCompRow(subId, 'Final Exam', 50);
+        }
+        function addCompRow(subId, name='', weight='', score='') {
+            const list = document.getElementById(`comps-${subId}`);
+            const rowId = `cr-${Date.now()}-${Math.random()}`;
+            const div = document.createElement('div'); div.className = 'comp-grid'; div.id = rowId;
+            div.innerHTML = `
+                <div>
+                    <input type="text" placeholder="Item Name" value="${name}" maxlength="50" oninput="updateCharCount(this)" onfocus="focusCharCount(this)" onblur="blurCharCount(this)">
+                    <div class="char-count">0/50</div>
+                </div>
+                <input type="number" placeholder="%" class="cw" value="${weight}" oninput="validateComponentInput(this); calcSubject('${subId}')">
+                <input type="number" placeholder="Score" class="cs" value="${score}" min="0" oninput="validateComponentInput(this); calcSubject('${subId}')">
+                <button class="btn-delete" onclick="document.getElementById('${rowId}').remove(); calcSubject('${subId}')">&times;</button>
+            `;
+            list.appendChild(div);
+            if(weight || score) calcSubject(subId);
+        }
+        function calcSubject(subId) {
+            if(!document.getElementById(subId)) return;
+            const rows = document.querySelectorAll(`#comps-${subId} .comp-grid`); let total = 0;
+            rows.forEach(r => {
+                const w = parseFloat(r.querySelector('.cw').value) || 0; const s = parseFloat(r.querySelector('.cs').value) || 0;
+                total += (s * (w/100));
+            });
+            const result = getPointFromScore(total);
+            document.getElementById(`score-${subId}`).innerText = total.toFixed(2);
+            document.getElementById(`letter-${subId}`).innerText = result.l;
+        }
+        function transferToSemester(subId) {
+            const name = document.querySelector(`#${subId} .sub-name`).value || "Unnamed Subject";
+            const score = document.getElementById(`score-${subId}`).innerText;
+            const semesters = document.querySelectorAll('.semester-block'); let targetId;
+            if(semesters.length === 0) targetId = addSemesterBlock(); else targetId = semesters[semesters.length - 1].id;
+            addCourseRow(targetId, name, score); showToast(`"${name}" transferred!`);
+        }
+
+        window.onload = function() { renderRulesFooter(); addSemesterBlock(); addSubjectCard(); };
+
+        if ("serviceWorker" in navigator) {
+            window.addEventListener("load", function() {
+                navigator.serviceWorker.register("service-worker.js");
+            });
+        }
+
+    </script>
+</body>
+</html>
