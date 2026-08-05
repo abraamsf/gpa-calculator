@@ -301,6 +301,31 @@
         [data-theme="dark"] .modal-content { background: var(--bg-card); }
         [data-theme="dark"] #toast { background: var(--text-primary); color: #000; }
 
+        /* --- NIGHT MODE: Number Input Spinner (SCU dll) --- */
+        /* Ganti tombol spinner bawaan browser (kotak putih) dengan ikon custom agar cocok dengan tema gelap */
+        [data-theme="dark"] input[type="number"]::-webkit-inner-spin-button,
+        [data-theme="dark"] input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 22px;
+            margin-left: 6px;
+            cursor: pointer;
+            border-radius: 4px;
+            background-color: #2a2a2a;
+            border: 1px solid var(--border-light);
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'><path d='M2 4L5 1L8 4Z' fill='%23aaaaaa'/><path d='M2 6L5 9L8 6Z' fill='%23aaaaaa'/></svg>");
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: 9px 13px;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+        [data-theme="dark"] input[type="number"]::-webkit-inner-spin-button:hover,
+        [data-theme="dark"] input[type="number"]::-webkit-outer-spin-button:hover {
+            background-color: #3a3a3a;
+            border-color: var(--accent);
+        }
+
     </style>
 </head>
 <body>
